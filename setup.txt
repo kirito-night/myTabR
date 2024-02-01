@@ -1,0 +1,3 @@
+source /users/nfs/Enseignants/piwowarski/venv/deepdac/bin/activate;
+export http_proxy='http://proxy.ufr-info-p6.jussieu.fr:3128';
+export https_proxy='http://proxy.ufr-info-p6.jussieu.fr:3128'
