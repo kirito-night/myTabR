@@ -44,7 +44,7 @@ def process_y(Y):
     """
     preprocessing for target values
     """
-    assert len(Y['train'].shape) == 1
+    assert len(Y['train'].shape) == 2
     normalizer = sklearn.preprocessing.StandardScaler()
     normalizer.fit(Y['train'])
     for key in ['train', 'test', 'val']:
@@ -78,4 +78,4 @@ def to_torch(dataset, labels, device=None):
         for key, x in data.items():
             data[key] = torch.from_numpy(x).to(device)
     for part, y in labels.items():
-        labels[part] = torch.from_numpy(y).to(device)
+        labels[part] = torch.from_numpy(y).squeeze().to(device)

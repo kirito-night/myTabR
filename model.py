@@ -105,7 +105,7 @@ class Model(nn.Module):
             -ki.square().sum(-1)
         )
         weights = self.dropout(torch.softmax(S, dim=-1))
- 
+        
         encode_y = self.Y(candidat_y[I])
         V = encode_y +  self.T(k[:, None] - ki)
         V = (weights[:, None] @ V).squeeze(1)

@@ -16,12 +16,12 @@ def evaluate(yhat, y, n_classe):
     elif n_classe == 2: 
         return (
             F.binary_cross_entropy(F.sigmoid(yhat), y.float()).item(),
-            torch.where((yhat>=0.5) == y, 1., 0.).mean().item()
+            torch.where((yhat>=0.5).unsqueeze(-1) == y, 1., 0.).mean().item()
         )
     else:
         return (
             F.cross_entropy(yhat, y).item(),
-            torch.where(yhat == y, 1., 0.).mean().item()
+            torch.where(yhat == y.unsqueeze(-1), 1., 0.).mean().item()
         )
     
 def get_task_loss(n_classe):
