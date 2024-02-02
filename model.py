@@ -58,7 +58,7 @@ class Model(nn.Module):
         self.normlization = nn.LayerNorm(d_main) if encoder_n_blocks > 0 else None
         self.K = nn.Linear(d_main, d_main)
         self.Y = (
-            nn.Linear(1, d_main) 
+            nn.Linear(1, d_main)
             if n_classes is None 
             else nn.Sequential(
                 nn.Embedding(n_classes, d_main),
@@ -105,7 +105,6 @@ class Model(nn.Module):
             -ki.square().sum(-1)
         )
         weights = self.dropout(torch.softmax(S, dim=-1))
-        
         encode_y = self.Y(candidat_y[I])
         V = encode_y +  self.T(k[:, None] - ki)
         V = (weights[:, None] @ V).squeeze(1)

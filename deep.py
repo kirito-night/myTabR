@@ -21,9 +21,9 @@ def evaluate(yhat, y, n_classe):
     else:
         return (
             F.cross_entropy(yhat, y).item(),
-            torch.where(yhat == y.unsqueeze(-1), 1., 0.).mean().item()
+            torch.where(yhat.argmax(1) == y, 1., 0.).mean().item()
         )
-    
+
 def get_task_loss(n_classe):
     if n_classe is None: # regression
         return nn.MSELoss()
