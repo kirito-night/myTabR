@@ -1,7 +1,6 @@
 from torch import Tensor, nn
 from tqdm import tqdm
 from data import *
-from model import Model
 import numpy as np
 import torch.nn.functional as F
 import torch.nn as nn

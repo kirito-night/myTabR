@@ -14,19 +14,18 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def main():
     data_folder = './data'
     
-    data_name_list = [
-        'black-friday',
-        #'otto', 
-        #'california', 
-        #'adult', 
-        'churn']
-    tasks = [
-        True, 
-        #False, 
-        #True, 
-        #False, 
-        False]
-    batch_list = [512,512,256,256,128]
+
+    infos = {
+        'california': (True, 256),
+        'black-friday': (True, 512),
+
+        'churn': (False, 128),
+        'adult': (False, 256),
+        'otto': (False, 512),
+    }
+
+    exp = ['otto']*4
+    exp = [(data_name,*infos[data_name]) for data_name in exp]
 
 
     # paramètres d'apprentissage
@@ -35,7 +34,7 @@ def main():
 
     # paramètres du modèle
 
-    for data_name, is_regression, BATCHSIZE in tqdm(zip(data_name_list, tasks, batch_list)):
+    for data_name, is_regression, BATCHSIZE in tqdm(exp):
         print('Dataset: ', data_name)
         print(f'{is_regression = }')
         print(f'{BATCHSIZE = }')
@@ -107,6 +106,7 @@ def main():
             losses = []
             # print(f"======= {epoch = } =======")
             # print(f'{patience = }/{max_patience}')
+            model.train()
             for idx in make_mini_batch(train_size, BATCHSIZE, shuffle=True):
                 optim.zero_grad()
                 x, y = get_Xy('train', idx)
@@ -117,8 +117,9 @@ def main():
                 l.backward()
                 losses.append(l.item())
                 optim.step()
-            print('train | loss: ', np.mean(losses).round(4))
+            #print('train | loss: ', np.mean(losses).round(4))
             log = []
+            model.eval()
             with torch.no_grad():
                 for idx in make_mini_batch(val_size, BATCHSIZE, shuffle=False):
                     x, y = get_Xy('val', idx)
@@ -128,19 +129,20 @@ def main():
                 best_score, patience = get_patience(best_score,np.mean(log), patience)
             epoch += 1
 
-            with torch.no_grad():
-                # Données test
-                log = []
-                for idx in make_mini_batch(test_size, BATCHSIZE, shuffle=False):
-                    x, y = get_Xy('test', idx)
-                    yhat = model(x, X_train, Y_train, training=False)
-                    log.append(evaluate(yhat, y, n_classe))
-                if is_regression: 
-                    print(f'test {data_name} | loss: ', np.mean(log).round(4))
-                else: 
-                    l, acc = np.mean(log,0).round(4)
-                    print(f'test {data_name} | acc: {acc} | loss: {l}')
-                log = []
+        with torch.no_grad():
+            # Données test
+            log = []
+            model.eval()
+            for idx in make_mini_batch(test_size, BATCHSIZE, shuffle=False):
+                x, y = get_Xy('test', idx)
+                yhat = model(x, X_train, Y_train, training=False)
+                log.append(evaluate(yhat, y, n_classe))
+            if is_regression: 
+                print(f'test {data_name} | loss: ', np.mean(log).round(4))
+            else: 
+                l, acc = np.mean(log,0).round(4)
+                print(f'test {data_name} | acc: {acc} | loss: {l}')
+            log = []
 
 if __name__ == '__main__':
     main()

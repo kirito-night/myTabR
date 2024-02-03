@@ -4,6 +4,7 @@ import faiss.contrib.torch_utils  # noqa  << this line makes faiss work with PyT
 import torch
 import torch.nn as nn
 from torchvision.transforms.v2 import Lambda
+from deep import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class Model(nn.Module):
@@ -23,6 +24,7 @@ class Model(nn.Module):
                  activation: nn.ReLU, # activation in Block
                  encoder_n_blocks: int = 0,
                  predictor_n_blocks: int = 1,
+                 segmentation_batch_size = None
                  ):
         super().__init__()
         d_int = int(d_main*d_multiplier)
@@ -76,14 +78,27 @@ class Model(nn.Module):
             faiss.GpuIndexFlatL2(faiss.StandardGpuResources(),d_main)
         )
 
+        self.segmentation_batch_size = segmentation_batch_size
+
     def forward(self, x, candidat_x, candidat_y, context_size=96, training = False):
         x = self.forward_E(x)
         batch_size, d_main = x.shape
         f = self.normlization
         k = self.K(x if f is None else f(x))
         with torch.no_grad():
-            ki = self.forward_E(candidat_x)
-            ki = self.K(ki if f is None else f(ki))
+            candidat_size = candidat_y.shape[0]
+            if (self.segmentation_batch_size is None) or (candidat_size >= self.segmentation_batch_size):
+                ki = self.forward_E(candidat_x)
+                ki = self.K(ki if f is None else f(ki))
+            else:
+                ki = []
+                for index in make_mini_batch(candidat_size, self.segmentation_batch_size, shuffle=False):
+                    e = self.forward_E(
+                        { k:v[index] for k,v in candidat_x.items() }
+                    )
+                    e = self.K(e if f is None else f(e))
+                    ki.append(e)
+                ki = torch.cat(ki)
             self.search_index.reset()
             self.search_index.add(ki)
             D, I = self.search_index.search(k, context_size + (1 if training else 0))

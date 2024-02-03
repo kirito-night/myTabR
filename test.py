@@ -1,5 +1,5 @@
 import torch
+import numpy as np
 
-A = torch.ones(size=(3, 3))
-print(A)
-print(A.argsort())
+A = np.ones((3, 3))
+np.savetxt(f'log/0.9.log', A)
