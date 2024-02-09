@@ -11,7 +11,7 @@ from deep import *
 
 
 
-def main(train_perc_i):
+def main(train_perc_i, number=0):
     data_folder = '/Vrac/weather-big'
     batch_size = 1024
     is_regression = True
@@ -181,7 +181,8 @@ def main(train_perc_i):
             resultat.append(rmse)
         del candidat_train
         del labels_train
-        np.savetxt(f'log/{train_perc_i}_0.log', np.array(resultat))
+        np.savetxt(f'log/{train_perc_i}_{number}.log', np.array(resultat))
 
 if __name__ == '__main__':
-    main(4)
+    for h in range(2):
+        main(4, h)
