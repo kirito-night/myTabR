@@ -17,14 +17,14 @@ def main():
 
     infos = {
         'california': (True, 256),
-        'black-friday': (True, 512),
+        #'black-friday': (True, 512),
 
         'churn': (False, 128),
         'adult': (False, 256),
-        'otto': (False, 512),
+        #'otto': (False, 512),
     }
 
-    exp = ['otto']*4
+    exp = list(infos.keys())
     exp = [(data_name,*infos[data_name]) for data_name in exp]
 
 
@@ -32,19 +32,25 @@ def main():
     learning_rate = 0.0003121273641315169
     weight_decay = 0.0000012260352006404615
 
-    # paramètres du modèle
+    print("#####################################")
+    print(f"########## DEVICE {device} #############")
+    print("#####################################")
 
     for data_name, is_regression, BATCHSIZE in tqdm(exp):
         print('Dataset: ', data_name)
         print(f'{is_regression = }')
         print(f'{BATCHSIZE = }')
         torch.cuda.empty_cache()
+
+        print('LOADING DATA ....')
         dataset, Y = load_data(
             path= f"{data_folder}/{data_name}",
             mode = 'quantile',
             is_regression=is_regression
         )
-        to_torch(dataset, Y, device=device)
+        to_torch(dataset, Y)
+        for part in ['train', 'test', 'val']:
+            dataset[part], Y[part] = to(dataset[part], Y[part], device)
 
         if is_regression: n_classe = None
         else: n_classe = len(torch.unique(Y['train']))
@@ -79,11 +85,19 @@ def main():
             normalization= nn.LayerNorm,
             activation= nn.ReLU,
         ).to(device)
-        optim = torch.optim.AdamW(
-            model.parameters(),
-            lr = learning_rate,
-            weight_decay = weight_decay
-        )
+
+        print("Number of cuda device", torch.cuda.device_count())
+        if torch.cuda.device_count() > 1:
+            model = nn.DataParallel(model)
+
+
+        optim_params = {
+            "type": "AdamW",
+            "lr": 0.0003121273641315169,
+            "weight_decay": 0.0000012260352006404615,
+        }
+
+        optim = make_optimizer(model, **optim_params)
 
         def get_Xy(part, idx):
             return (
@@ -143,6 +157,8 @@ def main():
                 l, acc = np.mean(log,0).round(4)
                 print(f'test {data_name} | acc: {acc} | loss: {l}')
             log = []
+        del dataset
+        del Y
 
 if __name__ == '__main__':
     main()

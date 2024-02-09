@@ -24,7 +24,7 @@ class Model(nn.Module):
                  activation: nn.ReLU, # activation in Block
                  encoder_n_blocks: int = 0,
                  predictor_n_blocks: int = 1,
-                 segmentation_batch_size = None
+                 segmentation_batch_size = None,
                  ):
         super().__init__()
         d_int = int(d_main*d_multiplier)
@@ -34,7 +34,7 @@ class Model(nn.Module):
                 nn.Linear(d_main, d_int),
                 activation(),
                 nn.Dropout(dropout0),
-                nn.Linear(d_int, d_main)
+                nn.Linear(d_int, d_main),
             ]
             if norm: args.insert(0, normalization(d_main))
             return nn.Sequential(*args)
@@ -74,33 +74,59 @@ class Model(nn.Module):
             nn.Linear(d_int, d_main, bias=False)
         )
         self.dropout = nn.Dropout(context_dropout)
-        self.search_index = (
-            faiss.GpuIndexFlatL2(faiss.StandardGpuResources(),d_main)
-        )
+        self.search_index = None
 
         self.segmentation_batch_size = segmentation_batch_size
+        self.memory_ki = None
 
-    def forward(self, x, candidat_x, candidat_y, context_size=96, training = False):
-        x = self.forward_E(x)
-        batch_size, d_main = x.shape
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        if isinstance(self.Y, nn.Linear):
+            bound = 1 / np.sqrt(2.0)
+            nn.init.uniform_(self.Y.weight, -bound, bound)  # type: ignore[code]  # noqa: E501
+            nn.init.uniform_(self.Y.bias, -bound, bound)  # type: ignore[code]  # noqa: E501
+        else:
+            assert isinstance(self.Y[0], nn.Embedding)
+            nn.init.uniform_(self.Y[0].weight, -1.0, 1.0)  # type: ignore[code]  # noqa: E501
+
+    def forward(self, x_, candidat_x, candidat_y, context_size=96, training = False, memory = False):
+        x_ = self.forward_E(x_)
+        batch_size, d_main = x_.shape
         f = self.normlization
-        k = self.K(x if f is None else f(x))
+        if f is None: f = lambda x: x
+        k = self.K(x_ if f is None else f(x_))
+
+
+        self.search_index = (
+            faiss.GpuIndexFlatL2(faiss.StandardGpuResources(),d_main) 
+            if k.device.type == 'cuda'
+            else faiss.IndexFlatL2(d_main)
+        )
+        
         with torch.no_grad():
             candidat_size = candidat_y.shape[0]
-            if (self.segmentation_batch_size is None) or (candidat_size >= self.segmentation_batch_size):
+            if memory and self.memory_ki is not None:
+                ki = self.memory_ki
+            elif (self.segmentation_batch_size is None) or (candidat_size <= self.segmentation_batch_size):
                 ki = self.forward_E(candidat_x)
                 ki = self.K(ki if f is None else f(ki))
             else:
-                ki = []
-                for index in make_mini_batch(candidat_size, self.segmentation_batch_size, shuffle=False):
-                    e = self.forward_E(
-                        { k:v[index] for k,v in candidat_x.items() }
-                    )
-                    e = self.K(e if f is None else f(e))
-                    ki.append(e)
-                ki = torch.cat(ki)
+                ki = torch.cat(
+                    [
+                        self.forward_E({ k:f(v[index]) for k,v in candidat_x.items() })
+                        for index in make_mini_batch(
+                            candidat_size, 
+                            self.segmentation_batch_size, 
+                            shuffle=False)
+                    ]
+                )
+            if memory: self.memory_ki = ki
+
             self.search_index.reset()
             self.search_index.add(ki)
+
+            
             D, I = self.search_index.search(k, context_size + (1 if training else 0))
             if training: I = I.gather(-1 , D.argsort()[:, 1:])
             else: ki = ki[I]
@@ -124,16 +150,17 @@ class Model(nn.Module):
         V = encode_y +  self.T(k[:, None] - ki)
         V = (weights[:, None] @ V).squeeze(1)
 
-        x = x + V
+        x_ = x_ + V
         for block in self.block_P:
-            x = x + block(x)
-        return self.P(x)
+            x_ = x_ + block(x_)
+        return self.P(x_)
             
     def forward_E(self, x):
         """
         x: Dict[Tensor]
         """
         num, bin, cat = x.get('num'), x.get('bin'), x.get('cat')
+        del x
         x = []
         if num is not None: x.append(num)
         if bin is not None: x.append(bin)
@@ -144,3 +171,5 @@ class Model(nn.Module):
             x = x + block(x) 
         return x
     
+    def reset_memory(self):
+        self.memory_ki = None

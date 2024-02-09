@@ -73,9 +73,15 @@ def load_data(path, mode = 'quantile', is_regression = False):
     if is_regression: process_y(Y)
     return X, Y
 
-def to_torch(dataset, labels, device=None):
+def to_torch(dataset, labels):
     for data in dataset.values():
         for key, x in data.items():
-            data[key] = torch.from_numpy(x).to(device)
+            data[key] = torch.from_numpy(x)
     for part, y in labels.items():
-        labels[part] = torch.from_numpy(y).squeeze().to(device)
+        labels[part] = torch.from_numpy(y).squeeze()
+
+def to(data, labels, device=None):
+    return (
+        {k: v.to(device) for k,v in data.items()},
+        labels.to(device)
+    )
