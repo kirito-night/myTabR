@@ -17,11 +17,11 @@ def main():
 
     infos = {
         'california': (True, 256),
-        #'black-friday': (True, 512),
+        'black-friday': (True, 512),
 
         'churn': (False, 128),
         'adult': (False, 256),
-        #'otto': (False, 512),
+        'otto': (False, 512),
     }
 
     exp = list(infos.keys())
@@ -155,9 +155,14 @@ def main():
                 log.append(evaluate(yhat, y, n_classe))
             if is_regression: 
                 print(f'test {data_name} | loss: ', np.mean(log).round(4))
+                # save loss 
+                np.savetxt(f'./log/{data_name}.log', log)
+
             else: 
                 l, acc = np.mean(log,0).round(4)
                 print(f'test {data_name} | acc: {acc} | loss: {l}')
+                # save loss
+                np.savetxt(f'./log/{data_name}.log', np.array([acc, l]))
             log = []
         del dataset
         del Y
