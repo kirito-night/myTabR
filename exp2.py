@@ -9,6 +9,27 @@ import torch
 from deep import *
 
 
+# paramètres du modèle
+dataset, Y = load_data(
+    path= '/Vrac/weather-big',
+    is_regression=is_regression
+)
+to_torch(dataset, Y)
+
+if is_regression: n_classe = None
+else: n_classe = len(torch.unique(Y['train']))
+loss_fn = get_task_loss(n_classe)
+n_num_features, n_bin_features, cat_features = get_features(dataset)
+
+if n_classe is None:
+    for k,v in Y.items():
+        Y[k] = v.float().unsqueeze(-1)
+if n_classe == 2:
+    for k,v in Y.items():
+        Y[k] = v.unsqueeze(-1)
+
+X_train = dataset['train']
+Y_train = Y['train']
 
 
 def main(train_perc_i, number=0):
@@ -23,28 +44,6 @@ def main(train_perc_i, number=0):
 
     # 0 à 6 (inclus)
     percs = [0.01, 0.02, 0.04, 0.08, 0.16, 0.24, 0.32, 0.42]
-
-    # paramètres du modèle
-    dataset, Y = load_data(
-        path= '/Vrac/weather-big',
-        is_regression=is_regression
-    )
-    to_torch(dataset, Y)
-
-    if is_regression: n_classe = None
-    else: n_classe = len(torch.unique(Y['train']))
-    loss_fn = get_task_loss(n_classe)
-    n_num_features, n_bin_features, cat_features = get_features(dataset)
-
-    if n_classe is None:
-        for k,v in Y.items():
-            Y[k] = v.float().unsqueeze(-1)
-    if n_classe == 2:
-        for k,v in Y.items():
-            Y[k] = v.unsqueeze(-1)
-
-    X_train = dataset['train']
-    Y_train = Y['train']
 
     model = Model(
         n_num_features=n_num_features,
@@ -175,6 +174,5 @@ def main(train_perc_i, number=0):
 
 
 if __name__ == '__main__':
-  for log_num in range(2, 5):
     for perc_i in range(5):
-      main(perc_i, log_num)
+        main(perc_i, log_num)
