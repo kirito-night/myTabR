@@ -9,38 +9,37 @@ import torch
 from deep import *
 
 
-data_folder = '/Vrac/weather-big'
-batch_size = 1024
-is_regression = True
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# paramètres du modèle
-dataset, Y = load_data(
-    path= '/Vrac/weather-big',
-    is_regression=True
-)
-to_torch(dataset, Y)
-
-if is_regression: n_classe = None
-else: n_classe = len(torch.unique(Y['train']))
-loss_fn = get_task_loss(n_classe)
-n_num_features, n_bin_features, cat_features = get_features(dataset)
-
-if n_classe is None:
-    for k,v in Y.items():
-        Y[k] = v.float().unsqueeze(-1)
-if n_classe == 2:
-    for k,v in Y.items():
-        Y[k] = v.unsqueeze(-1)
-
-X_train = dataset['train']
-Y_train = Y['train']
-
-
 def main(train_perc_i, number=0):
     print("#####################################")
     print(f"########## DEVICE {device} #############")
     print("#####################################")
+
+
+    data_folder = '/Vrac/weather-big'
+    batch_size = 1024
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # paramètres du modèle
+    dataset, Y = load_data(
+        path= '/Vrac/weather-big',
+        is_regression=is_regression
+    )
+    to_torch(dataset, Y)
+
+    if is_regression: n_classe = None
+    else: n_classe = len(torch.unique(Y['train']))
+    loss_fn = get_task_loss(n_classe)
+    n_num_features, n_bin_features, cat_features = get_features(dataset)
+
+    if n_classe is None:
+        for k,v in Y.items():
+            Y[k] = v.float().unsqueeze(-1)
+    if n_classe == 2:
+        for k,v in Y.items():
+            Y[k] = v.unsqueeze(-1)
+
+    X_train = dataset['train']
+    Y_train = Y['train']
 
 
     # 0 à 6 (inclus)

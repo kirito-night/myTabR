@@ -96,6 +96,10 @@ class Model(nn.Module):
             nn.init.uniform_(self.Y[0].weight, -1.0, 1.0)
 
     def forward(self, x, candidat_x, candidat_y, context_size=96, training = False, memory = False):
+        """
+        x: input object
+        candidat_x, candidat_y: 
+        """
         x = self.forward_E(x)
         batch_size, d_main = x.shape
         f = self.normlization
@@ -155,10 +159,11 @@ class Model(nn.Module):
             
     def forward_E(self, x):
         """
-        x: Dict[Tensor]
+        Applique le module Encoder sur x
         """
+        # Récupère les donnnées
         x_num, x_bin, x_cat = x.get('num'), x.get('bin'), x.get('cat')
-        del x
+        del x # optimise la mémoire du gpu
         x = []
         if x_num is not None: x.append(x_num)
         if x_bin is not None: x.append(x_bin)
