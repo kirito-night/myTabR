@@ -16,9 +16,9 @@ class Model(nn.Module):
                  n_bin_features,
                  n_cat_features,
                  n_classes,
-                 d_main = 265, # out dimension of encoder
-                 d_multiplier = 2, # linear in block
-                 context_dropout = 0.38920071545944357, # dropout after softmax on R
+                 d_main = 265, # dimension de sortie de l'encoder
+                 d_multiplier = 2, # pour la dimension du premier linear de Block
+                 context_dropout = 0.38920071545944357, # dropout après softmax de R
                  dropout = 0.38852797479169876, # dropout in Block
                  normalization = nn.LayerNorm, # normization in Block
                  activation = nn.ReLU, # activation in Block
@@ -78,6 +78,7 @@ class Model(nn.Module):
         )
         self.dropout = nn.Dropout(context_dropout)
 
+        # Pour l'optimisation la mémoire et le temps
         self.segmentation_batch_size = segmentation_batch_size
         self.memory_ki = None
 
@@ -86,11 +87,11 @@ class Model(nn.Module):
     def reset_parameters(self):
         if isinstance(self.Y, nn.Linear):
             bound = 1 / np.sqrt(2.0)
-            nn.init.uniform_(self.Y.weight, -bound, bound)  # type: ignore[code]  # noqa: E501
-            nn.init.uniform_(self.Y.bias, -bound, bound)  # type: ignore[code]  # noqa: E501
+            nn.init.uniform_(self.Y.weight, -bound, bound)
+            nn.init.uniform_(self.Y.bias, -bound, bound)
         else:
             assert isinstance(self.Y[0], nn.Embedding)
-            nn.init.uniform_(self.Y[0].weight, -1.0, 1.0)  # type: ignore[code]  # noqa: E501
+            nn.init.uniform_(self.Y[0].weight, -1.0, 1.0)
 
     def forward(self, x, candidat_x, candidat_y, context_size=96, training = False, memory = False):
         x = self.forward_E(x)

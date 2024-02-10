@@ -70,7 +70,7 @@ def load_data(path, mode = 'quantile', is_regression = False):
         for part in ['train', 'test', 'val']
     }
     Y = {part:np.load(f'{path}/Y_{part}.npy')[..., np.newaxis] for part in ['train', 'test', 'val']}
-    if 'num' in  X['train']: process_num(X, mode)
+    if 'num' in  X['train']: process_num(X)
     if 'cat' in  X['train']: process_cat(X)
     if is_regression: process_y(Y)
     return X, Y
