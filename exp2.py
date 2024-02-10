@@ -9,10 +9,15 @@ import torch
 from deep import *
 
 
+data_folder = '/Vrac/weather-big'
+batch_size = 1024
+is_regression = True
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # paramètres du modèle
 dataset, Y = load_data(
     path= '/Vrac/weather-big',
-    is_regression=is_regression
+    is_regression=True
 )
 to_torch(dataset, Y)
 
@@ -33,10 +38,6 @@ Y_train = Y['train']
 
 
 def main(train_perc_i, number=0):
-    data_folder = '/Vrac/weather-big'
-    batch_size = 1024
-    is_regression = True
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("#####################################")
     print(f"########## DEVICE {device} #############")
     print("#####################################")
@@ -175,4 +176,4 @@ def main(train_perc_i, number=0):
 
 if __name__ == '__main__':
     for perc_i in range(5):
-        main(perc_i, log_num)
+        main(perc_i, 4)
