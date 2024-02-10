@@ -50,6 +50,7 @@ def main(train_perc_i, number=0):
         n_bin_features=n_bin_features,
         n_cat_features=cat_features,
         n_classes=n_classe,
+        segmentation_batch_size=10240
     ).to(device)
 
     print("Number of cuda device", torch.cuda.device_count())

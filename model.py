@@ -106,6 +106,9 @@ class Model(nn.Module):
         if f is None: f = lambda x: x
         k = self.K(x if f is None else f(x))
         
+        """
+        Lors de l'apprentissage, on calcule
+        """
         with torch.no_grad():
             candidat_size = candidat_y.shape[0]
             if memory and self.memory_ki is not None:
@@ -142,24 +145,13 @@ class Model(nn.Module):
             ).reshape(batch_size, context_size, d_main)
             ki = self.K(ki if f is None else f(ki))
 
-        S = - (
-            -k.square().sum(-1, keepdim=True)
-            + (2 * (k[..., None, :] @ ki.transpose(-1, -2))).squeeze(-2)
-            -ki.square().sum(-1)
-        )
-        weights = self.dropout(torch.softmax(S, dim=-1))
-        encode_y = self.Y(candidat_y[I])
-        V = encode_y +  self.T(k[:, None] - ki)
-        V = (weights[:, None] @ V).squeeze(1)
 
-        x = x + V
-        for block in self.block_P:
-            x = x + block(x)
-        return self.P(x)
+        V = self.forward_R(k, ki, candidat_y[I])
+        return self.forward_P(x + V)
             
     def forward_E(self, x):
         """
-        Applique le module Encoder sur x
+        Applique le module Encoder
         """
         # Récupère les donnnées
         x_num, x_bin, x_cat = x.get('num'), x.get('bin'), x.get('cat')
@@ -173,9 +165,29 @@ class Model(nn.Module):
         for block in self.block_E:
             x = x + block(x) 
         return x
+    
+    def forward_R(self, k, ki, y):
+        """
+        Applique le module R
+        """
+        S = - (
+            -k.square().sum(-1, keepdim=True)
+            + (2 * (k[..., None, :] @ ki.transpose(-1, -2))).squeeze(-2)
+            -ki.square().sum(-1)
+        )
+        weights = self.dropout(torch.softmax(S, dim=-1))
+        V = self.Y(y) +  self.T(k[:, None] - ki)
+        V = (weights[:, None] @ V).squeeze(1)
+        return V
 
-    def forward_R(self, k, ki, yi):
-        pass
+    def forward_P(self, x):
+        """
+        Applique le module Predictor
+        """
+        for block in self.block_P:
+            x = x + block(x)
+        return self.P(x)
+
 
     def reset_memory(self):
         self.memory_ki = None
