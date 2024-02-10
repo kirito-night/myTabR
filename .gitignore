@@ -8,6 +8,7 @@ data/
 
 # Other files and folders
 .settings/
+.__pycache__/
 
 # Executables
 *.swf

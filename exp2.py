@@ -9,20 +9,20 @@ import torch
 from deep import *
 
 
+batch_size = 1024
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def main(train_perc_i, number=0):
     print("#####################################")
     print(f"########## DEVICE {device} #############")
     print("#####################################")
 
-
-    data_folder = '/Vrac/weather-big'
-    batch_size = 1024
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # paramètres du modèle
+    is_regression = True
     dataset, Y = load_data(
         path= '/Vrac/weather-big',
-        is_regression=is_regression
+        is_regression=True
     )
     to_torch(dataset, Y)
 

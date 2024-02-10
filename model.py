@@ -173,6 +173,9 @@ class Model(nn.Module):
         for block in self.block_E:
             x = x + block(x) 
         return x
-    
+
+    def forward_R(self, k, ki, yi):
+        pass
+
     def reset_memory(self):
         self.memory_ki = None
