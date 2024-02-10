@@ -4,11 +4,8 @@ from data import *
 import numpy as np
 import torch.nn.functional as F
 import torch.nn as nn
-import torch.optim as optim
-from typing import Any, Callable, Optional, Union, cast
-from torch.nn.parameter import Parameter
 
-def make_mini_batch(data_size, batch_size, shuffle=True) -> torch.Tensor: 
+def make_mini_batch(data_size, batch_size, shuffle=True): 
     if shuffle: return torch.randperm(data_size).split(batch_size)
     else: return torch.arange(data_size).split(batch_size)
 
@@ -27,14 +24,24 @@ def evaluate(yhat, y, n_classe):
         )
 
 def get_task_loss(n_classe):
-    if n_classe is None: # regression
+    """
+    Donne la loss selon la tâche:
+    - regression: Mean Square Error
+    - classification binaire: Binary Cross Entropy 
+    - classification multi-classe: Cross Entropy 
+    """
+    if n_classe is None or n_classe == 1: # regression
         return nn.MSELoss()
-    elif n_classe == 2: 
-        return nn.BCEWithLogitsLoss()
-    else:
-        return nn.CrossEntropyLoss()
+    elif n_classe == 2: return nn.BCEWithLogitsLoss()
+    else: return nn.CrossEntropyLoss()
     
 def get_features(dataset):
+    """
+    Donnne les dimensions des données:
+    - numérique
+    - binaire
+    - catégoriel
+    """
     n_num_features = dataset['train'].get('num', 0)
     n_bin_features = dataset['train'].get('bin', 0)
     cat_features =  dataset['train'].get('cat', 0)
@@ -49,7 +56,9 @@ def get_features(dataset):
 
 def get_patience(best_value, current_value, patience, delta=0):
     """
-    Patience défnint dans l'article, pour la minimisation.
+    Patience définit dans l'article, pour la minimisation.
+    Pour faire du early stopping, on regarde loss la plus petite sur les donnnées de validation durant l'apprentissage.
+    Si elle s'est amélioré, patience = 0, sinon patience augmente de 1 
     retourne un tuple (best_value, patience)
     """
     if current_value <= best_value - delta:
@@ -58,8 +67,13 @@ def get_patience(best_value, current_value, patience, delta=0):
         return (best_value, patience+1)
 
 
-#=============== Optimization ===============
 
+################ INSPIRED BY AUTHORS #############################
+import torch.optim as optim
+from typing import Any, Callable, Optional, Union, cast
+from torch.nn.parameter import Parameter
+
+#=============== Optimization ===============
 def make_parameter_groups(
     model: nn.Module,
     zero_weight_decay_condition,
@@ -98,8 +112,6 @@ def make_parameter_groups(
     return [params_with_wd, params_without_wd] + list(custom_params.values())
 
 
-
-        
 def zero_wd_condition(
     module_name: str,
     module: nn.Module,
@@ -142,3 +154,4 @@ def make_optimizer(
         module, zero_weight_decay_condition, custom_parameter_groups
     )
     return Optimizer(parameter_groups, **optimizer_kwargs)
+###################################

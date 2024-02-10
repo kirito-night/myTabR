@@ -134,10 +134,11 @@ def main():
             #print('train | loss: ', np.mean(losses).round(4))
             log = []
             model.eval()
+            model.reset_memory()
             with torch.no_grad():
                 for idx in make_mini_batch(val_size, BATCHSIZE, shuffle=False):
                     x, y = get_Xy('val', idx)
-                    yhat = model(x, X_train, Y_train, training=False)
+                    yhat = model(x, X_train, Y_train, training=False, memory=True)
                     if n_classe == 2: y = y.float()
                     log.append(loss_fn(yhat, y).item())
                 best_score, patience = get_patience(best_score,np.mean(log), patience)
@@ -147,9 +148,10 @@ def main():
             # Données test
             log = []
             model.eval()
+            model.reset_memory()
             for idx in make_mini_batch(test_size, BATCHSIZE, shuffle=False):
                 x, y = get_Xy('test', idx)
-                yhat = model(x, X_train, Y_train, training=False)
+                yhat = model(x, X_train, Y_train, training=False, memory=True)
                 log.append(evaluate(yhat, y, n_classe))
             if is_regression: 
                 print(f'test {data_name} | loss: ', np.mean(log).round(4))

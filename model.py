@@ -12,42 +12,45 @@ class Model(nn.Module):
     Model: TabR-S (simple)
     """
     def __init__(self,
-                 n_num_features: int,
-                 n_bin_features: int,
-                 cat_cardinalities: list[int],
-                 n_classes: Optional[int],
-                 d_main: int, # out dimension of encoder
-                 d_multiplier: float, # linear in block
-                 context_dropout: float, # dropout after softmax on R
-                 dropout0: float, # dropout in Block
-                 normalization: nn.LayerNorm, # normization in Block
-                 activation: nn.ReLU, # activation in Block
-                 encoder_n_blocks: int = 0,
-                 predictor_n_blocks: int = 1,
+                 n_num_features,
+                 n_bin_features,
+                 n_cat_features,
+                 n_classes,
+                 d_main = 265, # out dimension of encoder
+                 d_multiplier = 2, # linear in block
+                 context_dropout = 0.38920071545944357, # dropout after softmax on R
+                 dropout = 0.38852797479169876, # dropout in Block
+                 normalization = nn.LayerNorm, # normization in Block
+                 activation = nn.ReLU, # activation in Block
+                 encoder_n_blocks = 0,
+                 predictor_n_blocks = 1,
                  segmentation_batch_size = None,
                  ):
         super().__init__()
+        """
+        Paramètres par défaut du TabR-S
+        """
         d_int = int(d_main*d_multiplier)
 
         def make_block(norm):
             args = [
                 nn.Linear(d_main, d_int),
                 activation(),
-                nn.Dropout(dropout0),
+                nn.Dropout(dropout),
                 nn.Linear(d_int, d_main),
             ]
             if norm: args.insert(0, normalization(d_main))
             return nn.Sequential(*args)
         
-        # E
+        # Partie Encoder
         self.linear = nn.Linear(
             n_num_features+
             n_bin_features+
-            cat_cardinalities,
+            cat_features,
                     d_main)
         self.block_E = nn.ModuleList([make_block(i>0) for i in range(encoder_n_blocks)])
 
-        # P
+        # Partie Predictor
         out_dim = 1 if (n_classes == 2 or n_classes is None) else n_classes
         self.P = nn.Sequential(
             normalization(d_main),
@@ -56,7 +59,7 @@ class Model(nn.Module):
         )
         self.block_P = nn.ModuleList([make_block(True) for i in range(predictor_n_blocks)])
 
-        # R
+        # Partie Retrieval Module
         self.normlization = nn.LayerNorm(d_main) if encoder_n_blocks > 0 else None
         self.K = nn.Linear(d_main, d_main)
         self.Y = (
@@ -70,11 +73,10 @@ class Model(nn.Module):
         self.T = nn.Sequential(
             nn.Linear(d_main, d_int),
             activation(),
-            nn.Dropout(dropout0),
+            nn.Dropout(dropout),
             nn.Linear(d_int, d_main, bias=False)
         )
         self.dropout = nn.Dropout(context_dropout)
-        self.search_index = None
 
         self.segmentation_batch_size = segmentation_batch_size
         self.memory_ki = None
@@ -90,19 +92,14 @@ class Model(nn.Module):
             assert isinstance(self.Y[0], nn.Embedding)
             nn.init.uniform_(self.Y[0].weight, -1.0, 1.0)  # type: ignore[code]  # noqa: E501
 
-    def forward(self, x_, candidat_x, candidat_y, context_size=96, training = False, memory = False):
-        x_ = self.forward_E(x_)
-        batch_size, d_main = x_.shape
+    def forward(self, x, candidat_x, candidat_y, context_size=96, training = False, memory = False):
+        x = self.forward_E(x)
+        batch_size, d_main = x.shape
         f = self.normlization
         if f is None: f = lambda x: x
-        k = self.K(x_ if f is None else f(x_))
+        k = self.K(x if f is None else f(x))
 
-
-        self.search_index = (
-            faiss.GpuIndexFlatL2(faiss.StandardGpuResources(),d_main) 
-            if k.device.type == 'cuda'
-            else faiss.IndexFlatL2(d_main)
-        )
+        search_index = faiss.GpuIndexFlatL2(faiss.StandardGpuResources(), d_main) 
         
         with torch.no_grad():
             candidat_size = candidat_y.shape[0]
@@ -150,21 +147,21 @@ class Model(nn.Module):
         V = encode_y +  self.T(k[:, None] - ki)
         V = (weights[:, None] @ V).squeeze(1)
 
-        x_ = x_ + V
+        x = x + V
         for block in self.block_P:
-            x_ = x_ + block(x_)
-        return self.P(x_)
+            x = x + block(x)
+        return self.P(x)
             
     def forward_E(self, x):
         """
         x: Dict[Tensor]
         """
-        num, bin, cat = x.get('num'), x.get('bin'), x.get('cat')
+        x_num, x_bin, x_cat = x.get('num'), x.get('bin'), x.get('cat')
         del x
         x = []
-        if num is not None: x.append(num)
-        if bin is not None: x.append(bin)
-        if cat is not None: x.append(cat)
+        if x_num is not None: x.append(x_num)
+        if x_bin is not None: x.append(x_bin)
+        if x_cat is not None: x.append(x_cat)
         x = torch.cat(x, 1)
         x = self.linear(x)
         for block in self.block_E:

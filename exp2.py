@@ -52,16 +52,6 @@ def main(train_perc_i, number=0):
         n_bin_features=n_bin_features,
         cat_cardinalities=cat_features,
         n_classes=n_classe,
-        #
-        d_main =  265,
-        d_multiplier = 2,
-        encoder_n_blocks = 0,
-        predictor_n_blocks = 1,
-        context_dropout= 0.38920071545944357,
-        dropout0= 0.38852797479169876,
-        normalization= nn.LayerNorm,
-        activation= nn.ReLU,
-        segmentation_batch_size = 102400,
     ).to(device)
 
     print("Number of cuda device", torch.cuda.device_count())

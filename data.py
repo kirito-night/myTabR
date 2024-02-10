@@ -5,36 +5,35 @@ import torch
 
 
 #========= Preprocessing dataset ==============
-def process_num(dataset, mode='quantile'):
+def process_num(dataset):
     """
-    preprocessing for numeric featuress
+    Pré-traitement pour données numériques
+    On fait une normalisation quantile en utilisant Scikit-learn
     """
     X_train = dataset['train']['num']
-    if mode == 'quantile':
-        normalizer = sklearn.preprocessing.QuantileTransformer(
-                output_distribution='normal',
-                n_quantiles=max(min(X_train.shape[0] // 30, 1000), 10),
-                subsample=1_000_000_000,  # i.e. no subsampling
-            )
-        noise = 1e-3
-        if noise > 0:
-            # Noise is added to get a bit nicer transformation
-            # for features with few unique values.
-            stds = np.std(X_train, axis=0, keepdims=True)
-            noise_std = noise / np.maximum(stds, noise)  # type: ignore[code]
-            X_train = X_train + noise_std * np.random.default_rng().standard_normal(X_train.shape)
-    elif mode == 'standard':
-        normalizer = sklearn.preprocessing.StandardScaler()
+    normalizer = sklearn.preprocessing.QuantileTransformer(
+            output_distribution='normal',
+            n_quantiles = max(min(X_train.shape[0] // 30, 1000), 10),
+            subsample=1_000_000_000,  # i.e. no subsampling
+        )
+    noise = 1e-3
+    # l'auteur ajoute du bruit dans le cas où il y a  peu de valeurs uniques
+    stds = np.std(X_train, axis=0, keepdims=True)
+    noise_std = noise / np.maximum(stds, noise) 
+    X_train = X_train + noise_std * np.random.default_rng().standard_normal(X_train.shape)
     normalizer.fit(X_train)
     for key in ['train', 'test', 'val']:
         dataset[key]['num'] = normalizer.transform(dataset[key]['num'])
 
 def process_cat(dataset):
     """
-    preprocessing for categorial featuress
+    Pré-traitement pour données catégorielles
+    On fait un one-hot encoding sur les données
     """
     transformer = sklearn.preprocessing.OneHotEncoder(
-        handle_unknown='ignore', sparse=False, dtype=np.float32  # type: ignore[code]
+        handle_unknown='ignore', 
+        sparse=False, 
+        dtype=np.float32
     )
     transformer.fit(dataset['train']['cat'])
     for key in ['train', 'test', 'val']:
@@ -42,7 +41,8 @@ def process_cat(dataset):
 
 def process_y(Y):
     """
-    preprocessing for target values
+    Pré-traitement sur les labels pour la regression
+    On fait une normalisation centrée réduite
     """
     assert len(Y['train'].shape) == 2
     normalizer = sklearn.preprocessing.StandardScaler()
@@ -50,13 +50,15 @@ def process_y(Y):
     for key in ['train', 'test', 'val']:
         Y[key] = normalizer.transform(Y[key])
  
+
 def cat_features(dataset):
     return [len(np.unique(x)) for x in dataset['train']['cat'].T]
 
 def load_data(path, mode = 'quantile', is_regression = False):
     """
-    Load Train, Test, Val Dataset from folder
-    return X, Y
+    Charge les données d'entrainement, de validation, de test
+    path: chemin du dossier avec les données
+    mode: 
     """
     if path[-1] == '/': path = path[:-1]
     X = {part:
