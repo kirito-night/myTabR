@@ -183,6 +183,9 @@ def main(train_perc_i, number=0):
         del labels_train
         np.savetxt(f'log/{train_perc_i}_{number}.log', np.array(resultat))
 
+
+
 if __name__ == '__main__':
-    for h in range(2):
-        main(4, h)
+  for log_num in range(2, 5):
+    for perc_i in range(5):
+      main(perc_i, log_num)
