@@ -46,7 +46,7 @@ class Model(nn.Module):
         self.linear = nn.Linear(
             n_num_features+
             n_bin_features+
-            cat_features,
+            n_cat_features,
                     d_main)
         self.block_E = nn.ModuleList([make_block(i>0) for i in range(encoder_n_blocks)])
 
@@ -78,11 +78,13 @@ class Model(nn.Module):
         )
         self.dropout = nn.Dropout(context_dropout)
 
-        # Pour l'optimisation la mémoire et le temps
+        # Pour optimiser la mémoire du GPU et le temps
         self.segmentation_batch_size = segmentation_batch_size
         self.memory_ki = None
 
         self.reset_parameters()
+        self.search_index = faiss.GpuIndexFlatL2(faiss.StandardGpuResources(), d_main) 
+
 
     def reset_parameters(self):
         if isinstance(self.Y, nn.Linear):
@@ -99,8 +101,6 @@ class Model(nn.Module):
         f = self.normlization
         if f is None: f = lambda x: x
         k = self.K(x if f is None else f(x))
-
-        search_index = faiss.GpuIndexFlatL2(faiss.StandardGpuResources(), d_main) 
         
         with torch.no_grad():
             candidat_size = candidat_y.shape[0]
