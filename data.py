@@ -49,12 +49,8 @@ def process_y(Y):
     normalizer.fit(Y['train'])
     for key in ['train', 'test', 'val']:
         Y[key] = normalizer.transform(Y[key])
- 
 
-def cat_features(dataset):
-    return [len(np.unique(x)) for x in dataset['train']['cat'].T]
-
-def load_data(path, mode = 'quantile', is_regression = False):
+def load_data(path, is_regression = False):
     """
     Charge les données d'entrainement, de validation, de test
     path: chemin du dossier avec les données

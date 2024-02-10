@@ -13,7 +13,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def main():
     data_folder = './data'
-    
 
     infos = {
         'california': (True, 256),
@@ -45,7 +44,6 @@ def main():
         print('LOADING DATA ....')
         dataset, Y = load_data(
             path= f"{data_folder}/{data_name}",
-            mode = 'quantile',
             is_regression=is_regression
         )
         to_torch(dataset, Y)
@@ -73,7 +71,7 @@ def main():
         model = Model(
             n_num_features=n_num_features,
             n_bin_features=n_bin_features,
-            cat_cardinalities=cat_features,
+            n_cat_features=cat_features,
             n_classes=n_classe,
         ).to(device)
 

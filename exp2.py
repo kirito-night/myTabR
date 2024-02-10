@@ -27,7 +27,6 @@ def main(train_perc_i, number=0):
     # paramètres du modèle
     dataset, Y = load_data(
         path= '/Vrac/weather-big',
-        mode = 'quantile',
         is_regression=is_regression
     )
     to_torch(dataset, Y)
@@ -50,7 +49,7 @@ def main(train_perc_i, number=0):
     model = Model(
         n_num_features=n_num_features,
         n_bin_features=n_bin_features,
-        cat_cardinalities=cat_features,
+        n_cat_features=cat_features,
         n_classes=n_classe,
     ).to(device)
 
