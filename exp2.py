@@ -170,10 +170,9 @@ def main(train_perc_i, number=0):
             resultat.append(rmse)
         del candidat_train
         del labels_train
-        np.savetxt(f'log/{train_perc_i}_{number}.log', np.array(resultat))
+        np.savetxt(f'log/exp2/{train_perc_i}_{number}.log', np.array(resultat))
 
 
 
 if __name__ == '__main__':
-    for perc_i in range(5):
-        main(perc_i, 4)
+    main(3, 3)

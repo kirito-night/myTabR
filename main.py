@@ -151,7 +151,7 @@ def main():
                 l, acc = np.mean(log,0).round(4)
                 print(f'test {data_name} | acc: {acc} | loss: {l}')
                 # save loss
-                np.savetxt(f'./log/{data_name}.log', np.array([acc, l]))
+                np.savetxt(f'./log/exp1/{data_name}.log', np.array([acc, l]))
             log = []
         del dataset
         del Y
