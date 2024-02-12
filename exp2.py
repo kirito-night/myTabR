@@ -175,4 +175,4 @@ def main(train_perc_i, number=0):
 
 
 if __name__ == '__main__':
-    main(3, 3)
+    main(4, 4)

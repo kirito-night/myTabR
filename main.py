@@ -11,16 +11,16 @@ from deep import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def main():
+def main(num):
     data_folder = './data'
 
     infos = {
-        'california': (True, 256),
-        'black-friday': (True, 512),
+        #'california': (True, 256),
+        #'black-friday': (True, 512),
 
         'churn': (False, 128),
         'adult': (False, 256),
-        'otto': (False, 512),
+        #'otto': (False, 512),
     }
 
     exp = list(infos.keys())
@@ -87,6 +87,12 @@ def main():
         }
 
         optim = make_optimizer(model, **optim_params)
+        # optim = torch.optim.AdamW(
+        #     model.parameters(), 
+        #     lr= optim_params['lr'], 
+        #     weight_decay=optim_params['weight_decay']
+        # )
+
 
         def get_Xy(part, idx):
             return (
@@ -127,7 +133,7 @@ def main():
             with torch.no_grad():
                 for idx in make_mini_batch(val_size, BATCHSIZE, shuffle=False):
                     x, y = get_Xy('val', idx)
-                    yhat = model(x, X_train, Y_train, training=False, memory=True)
+                    yhat = model(x, X_train, Y_train, training=False, memory=False)
                     if n_classe == 2: y = y.float()
                     log.append(loss_fn(yhat, y).item())
                 best_score, patience = get_patience(best_score,np.mean(log), patience)
@@ -140,21 +146,21 @@ def main():
             model.reset_memory()
             for idx in make_mini_batch(test_size, BATCHSIZE, shuffle=False):
                 x, y = get_Xy('test', idx)
-                yhat = model(x, X_train, Y_train, training=False, memory=True)
+                yhat = model(x, X_train, Y_train, training=False, memory=False)
                 log.append(evaluate(yhat, y, n_classe))
             if is_regression: 
                 print(f'test {data_name} | loss: ', np.mean(log).round(4))
                 # save loss 
                 np.savetxt(f'./log/{data_name}.log', log)
-
             else: 
                 l, acc = np.mean(log,0).round(4)
                 print(f'test {data_name} | acc: {acc} | loss: {l}')
-                # save loss
-                np.savetxt(f'./log/exp1/{data_name}.log', np.array([acc, l]))
+                # save acc, loss
+                np.savetxt(f'./log/exp1/{num}/{data_name}.log', np.array([acc, l]))
             log = []
         del dataset
         del Y
 
 if __name__ == '__main__':
-    main()
+    for num in range(5):
+        main(num)
