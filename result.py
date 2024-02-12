@@ -41,7 +41,7 @@ def visualize_exp2():
     for num in range(max_num):
         S = [np.loadtxt(f'./log/exp2/{num}_{i}.log') for i in range(2)]
         S = np.array(S)
-        plt.plot(np.arange(num+1, len(percs)+1) , S.mean(0), 'o-', alpha = (1/max_num)*(num+1), color='b')
+        plt.plot(np.arange(num+1, len(percs)+1) , S.mean(0), 'o-', alpha = (1/max_num)*(num+1))
 
     plt.grid()
     plt.xticks(np.arange(1,len(percs)+1), [f'{int(i*100)} %' for i in percs])

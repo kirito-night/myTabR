@@ -1,6 +1,0 @@
-cd $HOME/Documents/AMAL/myTabR;
-source /users/nfs/Enseignants/piwowarski/venv/deepdac/bin/activate;
-export http_proxy='http://proxy.ufr-info-p6.jussieu.fr:3128';
-export https_proxy='http://proxy.ufr-info-p6.jussieu.fr:3128'
-
-ssh -L8888:localhost:8888 -L 6006:localhost:6006 ppti-14-502-06
