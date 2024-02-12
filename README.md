@@ -1,6 +1,10 @@
 # TABR: TABULAR DEEP LEARNING MEETSNEAREST NEIGHBORS IN 2023
 Réimplémentation du modèle TabR
 
+Dans le travail des auteurs, ils présentent "TabR", un modèle de Deep Learning (DL) à base récupération dédié aux données tabulaires, se démarquant des modèles basés sur les arbres de décision boostés par gradient (GBDT) prédominants dans les tâches de classification et de régression.
+
+TabR intègre une composante inspirée des k-Plus Proches Voisins (k-NN). Cette caractéristique permet à TabR non seulement de surpasser les modèles DL tabulaires existants, mais aussi de devancer les GBDT dans des benchmarks spécifiques, notamment ceux favorables aux GBDT.
+
 ## Architecture du code
 `data.py `: contient nos méthodes pour traitement des données tabulaire
 `deep.py` : contient les traitements nécessaire utiles pour l'apprentissage et évaluation
